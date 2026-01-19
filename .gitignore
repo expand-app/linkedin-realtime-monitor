@@ -1,0 +1,27 @@
+.ipynb_checkpoints
+.venv
+.vscode
+.idea/
+.DS_Store
+__pycache__
+
+# Elastic Beanstalk Files
+.elasticbeanstalk
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml
+
+# Built bundle files
+dist.zip
+dist
+files
+
+# Log files
+geckodriver.log
+log_query_result.log
+*.log
+
+# LinkedIn cookies
+.linkedin_api
+/node_modules/
+firefox_profile_dir
