@@ -59,19 +59,6 @@ INSTALLED_APPS = [
     'django_filters',
 
     # Our apps
-    'connect.apps.ConnectConfig',
-    'crawl.apps.CrawlConfig',
-    'wechat.apps.WechatConfig',
-    'standard.apps.StandardConfig',
-    'processing.apps.ProcessingConfig',
-    'mail_chimp.apps.MailChimpConfig',
-    'company.apps.CompanyConfig',
-    'location.apps.LocationConfig',
-    'rexpand_web.apps.RexpandWebConfig',
-    'firefox_profile',
-    'campaign_manager',
-    'auto_connect.apps.AutoConnectConfig',
-    'business.apps.BusinessConfig',
     'realtime_monitor.apps.RealtimeMonitorConfig'
 ]
 
@@ -146,17 +133,16 @@ WSGI_APPLICATION = 'linkedin_connector.wsgi.application'
 #         }
 #     }
 # else:
-#     DATABASES = {
-#         'default': {
-#             "ENGINE": "django.db.backends.postgresql",
-#             "NAME": "postgres",
-#             "USER": "root",
-#             "PASSWORD": "expand123",
-#             "HOST": "linkedin-connector-staging.c6dai18wjyfd.us-east-1.rds.amazonaws.com",
-#             "PORT": "5432",
-#             "CONN_MAX_AGE": 999,
-#         }
-#     }
+DATABASES = {
+    'default': {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "postgres",
+        "USER": "postgres",
+        "PASSWORD": "rexpand123",
+        "HOST": "lkrm.c6dai18wjyfd.us-east-1.rds.amazonaws.com",
+        "PORT": "5432"
+    }
+}
 
 # 配置 Redis 连接
 CACHES = {

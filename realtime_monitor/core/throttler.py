@@ -10,10 +10,10 @@ import django
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(BASE_DIR)
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "linkedin_connector.settings")  # 替换成你的 settings 路径
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "linkedin_realtime_monitor.settings")  # 替换成你的 settings 路径
 django.setup()
 
-from linkedin_connector.settings import redis_client
+from linkedin_realtime_monitor.settings import redis_client
 
 
 class Throttler:

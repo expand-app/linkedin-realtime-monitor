@@ -9,7 +9,7 @@ import logging
 import multiprocessing
 import threading
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 from asgiref.sync import sync_to_async
 
 
@@ -17,9 +17,7 @@ from asgiref.sync import sync_to_async
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(BASE_DIR)
 
-import linkedin_connector.settings
-
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "linkedin_connector.settings")  # 替换成你的 settings 路径
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "linkedin_realtime_monitor.settings")  # 替换成你的 settings 路径
 django.setup()
 
 
@@ -28,7 +26,7 @@ from realtime_monitor.models import MonitorAccount
 from realtime_monitor.core.account_monitor import AccountMonitor
 from realtime_monitor.core.db_health_check import db_health_checker, periodic_db_health_check
 from common.aws_cli.file_backend import FileBackend, FilePrefix
-from common.middlewares.trace_id import set_trace_id, generate_trace_id
+from middlewares.trace_id import set_trace_id, generate_trace_id
 from django.utils import timezone
 
 
@@ -365,7 +363,6 @@ class MonitorManager:
         django.setup()
 
         # 为子进程设置独立的 trace_id
-        from common.middlewares.trace_id import set_trace_id, generate_trace_id
         child_trace_id = generate_trace_id()
         set_trace_id(child_trace_id)
         logging.info(f"AccountMonitor subprocess started for account {account_id} with trace_id: {child_trace_id}")

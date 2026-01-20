@@ -13,17 +13,15 @@ from asgiref.sync import sync_to_async
 import django
 from django.utils import timezone as django_timezone
 
-from business.models import SearchProfilesTaskModel, SearchProfileRelation
-from business.services.linkedin_interaction import _handle_conversations
-from common.utils.wechat import headers
+from realtime_monitor.utils.utils import _handle_conversations
 from common.wechat_bot import send_wechat_message
-from linkedin_connector.settings import WechatRobotKey
+from linkedin_realtime_monitor.settings import WechatRobotKey
 
 # 项目根目录路径（根据你的实际结构调整）
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(BASE_DIR)
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "linkedin_connector.settings")  # 替换成你的 settings 路径
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "linkedin_realtime_monitor.settings")  # 替换成你的 settings 路径
 django.setup()
 
 
@@ -32,6 +30,8 @@ from django.db import connection as db_connection
 from lkp_client_base_utils.lkp_client_base import LKPClientBase
 from realtime_monitor.models import RealtimeConnection, RealtimeConversation, MonitorAccount
 from realtime_monitor.core.db_health_check import db_health_checker
+
+# 添加新表的导入
 from campaign_manager.models import CrawlLKRLProfileInfoModel
 
 

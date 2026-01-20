@@ -14,16 +14,15 @@ import django
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(BASE_DIR)
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "linkedin_connector.settings")  # 替换成你的 settings 路径
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "linkedin_realtime_monitor.settings")  # 替换成你的 settings 路径
 django.setup()
 
 from django.utils import timezone
-from django.db import connection
 from playwright.async_api import async_playwright, Browser, Page
 from realtime_monitor.core.event_handler import EventHandler
 from realtime_monitor.core.db_health_check import db_health_checker
 from realtime_monitor.models import MonitorAccount
-from common.middlewares.trace_id import get_current_trace_id
+from middlewares.trace_id import get_current_trace_id
 
 
 class AccountMonitor:
