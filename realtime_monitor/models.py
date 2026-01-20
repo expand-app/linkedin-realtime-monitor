@@ -1,13 +1,11 @@
 from django.db import models
 
-from common.model import BaseModel
-
 
 # Create your models here.
-
-
-class MonitorAccount(BaseModel):
+class MonitorAccount(models.Model):
     """监听账号配置"""
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     id = models.AutoField(primary_key=True)
     email = models.CharField(max_length=255, unique=True)
