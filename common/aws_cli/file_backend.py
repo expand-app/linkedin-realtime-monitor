@@ -1,7 +1,6 @@
 import boto3
-from linkedin_connector.settings import S3_REGION_NAME, S3_AWS_SECRET_ACCESS_KEY, S3_AWS_ACCESS_KEY_ID, S3_BUCKET_NAME
+from linkedin_realtime_monitor.settings import S3_REGION_NAME, S3_AWS_SECRET_ACCESS_KEY, S3_AWS_ACCESS_KEY_ID, S3_BUCKET_NAME
 import logging
-from linkedin_connector.settings import BROWSER_HEADLESS
 
 
 class FilePrefix:

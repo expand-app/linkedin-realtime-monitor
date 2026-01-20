@@ -7,7 +7,7 @@ import time
 import requests
 from urllib.parse import urljoin
 
-from common.middlewares.trace_id import generate_trace_id
+from middlewares.trace_id import generate_trace_id
 from .lkp_responses import GetCookieResponse, EscrowAccountResponse, RefreshCookieResponse, ReportActionResponse, \
     AccountInfoResponse, SubmitAuthCodeResponse, RefreshCookieTaskResponse, DeleteAccountResponse
 

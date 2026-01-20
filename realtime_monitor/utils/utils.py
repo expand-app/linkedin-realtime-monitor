@@ -100,28 +100,6 @@ def _handle_conversations(elements: list, sender_hash_id: str):
                     if public_id:
                         participant_public_ids.append(public_id)
 
-    # 批量查询数据库获取 public_id
-    # 只查找 SearchProfileRelation 中关联的 profile
-    member_id_map = {}
-    if participant_hash_ids or participant_public_ids:
-        query = Q()
-        if participant_hash_ids:
-            query |= Q(hash_id__in=participant_hash_ids)
-        if participant_public_ids:
-            query |= Q(public_id__in=participant_public_ids)
-
-        profiles = CrawlLKRLProfileInfoModel.objects.filter(
-            query,
-            task_relations__isnull=False  # 只返回在 SearchProfileRelation 中存在的 profile
-        ).distinct().only('hash_id', 'public_id', 'member_id')
-        # 将查询集转换为列表，避免在异步上下文中迭代查询集
-        profiles_list = list(profiles)
-        for profile in profiles_list:
-            if profile.hash_id:
-                member_id_map[('hash_id', profile.hash_id)] = profile.public_id
-            if profile.public_id:
-                member_id_map[('public_id', profile.public_id)] = profile.public_id
-
     for item in elements:
         if not item:
             continue
@@ -219,17 +197,6 @@ def _handle_conversations(elements: list, sender_hash_id: str):
                             profile_url = member_info.get('profileUrl', '')
                             if profile_url and '/in/' in profile_url:
                                 participant_public_id = profile_url.split('/in/')[-1].split('/')[0].split('?')[0]
-
-                        # 从数据库查询 public_id（如果数据库中有）
-                        if participant_hash_id and ('hash_id', participant_hash_id) in member_id_map:
-                            db_public_id = member_id_map[('hash_id', participant_hash_id)]
-                            if db_public_id:
-                                participant_public_id = db_public_id
-                                source = 'searched'
-                        elif participant_public_id and ('public_id', participant_public_id) in member_id_map:
-                            # 如果 public_id 已经在数据库中，标记为 searched
-                            source = 'searched'
-
                         break
 
         message_item = {
@@ -251,8 +218,7 @@ def _handle_conversations(elements: list, sender_hash_id: str):
                 'text': last_message_text,
                 'delivered_at': last_message_delivered_at,
                 'sender': last_message_sender,
-            },
-            'source': source,
+            }
         }
         all_messages.append(message_item)
 

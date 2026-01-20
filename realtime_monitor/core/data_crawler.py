@@ -24,15 +24,9 @@ sys.path.append(BASE_DIR)
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "linkedin_realtime_monitor.settings")  # 替换成你的 settings 路径
 django.setup()
 
-
-from django.db.models import Q
-from django.db import connection as db_connection
 from lkp_client_base_utils.lkp_client_base import LKPClientBase
 from realtime_monitor.models import RealtimeConnection, RealtimeConversation, MonitorAccount
 from realtime_monitor.core.db_health_check import db_health_checker
-
-# 添加新表的导入
-from campaign_manager.models import CrawlLKRLProfileInfoModel
 
 
 class DataCrawler:
@@ -133,14 +127,13 @@ class DataCrawler:
 
         if raw_connections_data:
             # 批量查询 member_id（优化性能）
-            member_id_map = await self._build_member_id_map(raw_connections_data)
 
             # 解析 connections 数据
             parsed_connections = []
 
             for connection_info in raw_connections_data:
                 try:
-                    conn_data = self._parse_connection_data(connection_info, member_id_map)
+                    conn_data = self._parse_connection_data(connection_info)
                     if conn_data:
                         parsed_connections.append(conn_data)
                 except Exception as e:
@@ -686,14 +679,12 @@ class DataCrawler:
         except (ValueError, TypeError, OverflowError, OSError):
             return None
 
-    def _parse_connection_data(self, connection_info: Dict,
-                               member_id_map: Optional[Dict] = None) -> Optional[Dict]:
+    def _parse_connection_data(self, connection_info: Dict) -> Optional[Dict]:
         """
         解析单个连接数据（与 linkedin_interaction.py 保持一致）
 
         Args:
             connection_info: LinkedIn API 返回的连接信息
-            member_id_map: 批量查询得到的 member_id 映射字典，格式为 {('public_id', value): member_id} 或 {('hash_id', value): member_id}
 
         Returns:
             格式化的连接数据字典，如果解析失败返回 None
@@ -730,17 +721,6 @@ class DataCrawler:
                 except (ValueError, AttributeError):
                     connected_at = created_at
 
-        # 从批量查询的映射中获取 member_id（避免 N+1 查询）
-        member_id = None
-        source = "original"
-        if member_id_map:
-            if public_id and ('public_id', public_id) in member_id_map:
-                member_id = member_id_map[('public_id', public_id)]
-                source = "searched"
-            elif hash_id and ('hash_id', hash_id) in member_id_map:
-                member_id = member_id_map[('hash_id', hash_id)]
-                source = "searched"
-
         # 构建返回数据
         return {
             'first_name': first_name,
@@ -748,52 +728,8 @@ class DataCrawler:
             'headline': headline,
             'public_id': public_id,
             'hash_id': hash_id,
-            'member_id': member_id,
-            'source': source,
             'connected_at': connected_at,
         }
-
-    async def _build_member_id_map(self, raw_connections_data: List[dict]) -> Dict:
-        """批量查询 member_id 映射"""
-
-        # 收集所有 public_id 和 hash_id
-        public_ids = []
-        hash_ids = []
-        for connection_info in raw_connections_data:
-            profile_dict = connection_info.get('connectedMemberResolutionResult', {})
-            if profile_dict:
-                public_id = profile_dict.get('publicIdentifier')
-                entity_urn = profile_dict.get('entityUrn', '')
-                hash_id = entity_urn.split(':')[-1] if entity_urn else None
-                if public_id:
-                    public_ids.append(public_id)
-                if hash_id:
-                    hash_ids.append(hash_id)
-
-        # 一次性批量查询所有相关的 profile 信息
-        member_id_map = {}
-        if public_ids or hash_ids:
-            query = Q()
-            if public_ids:
-                query |= Q(public_id__in=public_ids)
-            if hash_ids:
-                query |= Q(hash_id__in=hash_ids)
-
-            # 只查找 SearchProfileRelation 中关联的 profile
-            profiles = await sync_to_async(list)(
-                CrawlLKRLProfileInfoModel.objects.filter(
-                    query,
-                    task_relations__isnull=False
-                ).distinct().only('public_id', 'hash_id', 'member_id')
-            )
-            # 建立映射：通过 public_id 或 hash_id 快速查找 member_id
-            for profile in profiles:
-                if profile.public_id:
-                    member_id_map[('public_id', profile.public_id)] = profile.member_id
-                if profile.hash_id:
-                    member_id_map[('hash_id', profile.hash_id)] = profile.member_id
-
-        return member_id_map
 
     async def _save_connections_v2(self, connections: List[dict]) -> List[dict]:
         """批量保存好友数据（使用新的数据结构）
