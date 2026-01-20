@@ -117,7 +117,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'linkedin_connector.wsgi.application'
-
+# TODO 后续创建 生产的 redis 和 DB 数据库
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 # if IS_PROD_ENV:
@@ -140,7 +140,8 @@ DATABASES = {
         "USER": "postgres",
         "PASSWORD": "rexpand123",
         "HOST": "lkrm.c6dai18wjyfd.us-east-1.rds.amazonaws.com",
-        "PORT": "5432"
+        "PORT": "5432",
+        "CONN_MAX_AGE": 999,
     }
 }
 
