@@ -1,0 +1,32 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress  # 指定资源的类型，这里是 Ingress，用于管理 HTTP 和 HTTPS 的流量规则。
+metadata:
+  name: lkrm-prod-ingress
+  namespace: default
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing  # 指定 ALB 的类型，这里是 internet-facing，表示 ALB 将公开可访问。
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'  # 监听 80 和 443 端口 (HTTPS)
+    alb.ingress.kubernetes.io/ssl-cert: arn:aws:acm:us-east-1:625719641746:certificate/ab0dcc4f-3197-4163-b2c0-cdd1e3360de4  # 指定证书 ARN
+    alb.ingress.kubernetes.io/backend-protocol: HTTP
+    alb.ingress.kubernetes.io/target-type: ip  # 指定目标类型为 IP，表示 ALB 将直接路由到 Pod 的 IP 地址，而不是通过 NodePort 或 ClusterIP。
+    alb.ingress.kubernetes.io/healthcheck-path: /healthz
+    alb.ingress.kubernetes.io/healthcheck-port: "80"
+    alb.ingress.kubernetes.io/success-codes: "200"
+spec:
+  # 指定使用的 Ingress 类，这里是 alb，表示使用 ALB 来作为入口流量的负载均衡器。
+  ingressClassName: alb  # 👈 关键
+  rules:
+    - host: lkrm.api.tuilink.io  # 指定主机名，ALB 将根据这个主机名来路由流量。
+      http:
+        paths: # Ingress 的规则，定义了路由流量的规则。
+          - path: /
+            pathType: Prefix
+            backend: # 配置如何转发匹配到的流量。
+              service:
+                name: lkrm-prod  # 指定后端服务的名称，这里是之前创建的 Service 的名称。
+                port:
+                  number: 80
+  tls:
+    - hosts:
+        - lkrm.api.tuilink.io  # 指定主机名，ALB 将根据这个主机名来路由流量。
+      secretName: dummy-secret # 用于触发 TLS block，ACM 证书不需真正存在此 Secret

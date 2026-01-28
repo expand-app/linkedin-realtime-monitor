@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: cloudwatch-agent
+  namespace: amazon-cloudwatch
+spec:
+  selector:
+    matchLabels:
+      name: cloudwatch-agent  # Label to match the pods managed by this DaemonSet
+  template:
+    metadata:
+      labels:
+        name: cloudwatch-agent  # Label applied to the pods created by this DaemonSet
+    spec:
+      serviceAccountName: cloudwatch-agent-service-account
+      containers:
+        - name: cloudwatch-agent
+          image: amazon/cloudwatch-agent:1.300048.1b904
+          resources:
+            limits:
+              cpu: 200m
+              memory: 200Mi
+            requests:
+              cpu: 100m
+              memory: 100Mi
+          volumeMounts:
+            - name: config
+              mountPath: /etc/cwagentconfig
+            - name: varlog
+              mountPath: /var/log
+        - name: debug-container  # 这是新增的调试容器
+          image: busybox
+          command: ["sh", "-c", "tail -f /dev/null"]  # 使容器保持运行状态
+          volumeMounts:
+            - name: varlog
+              mountPath: /var/log  # 挂载与 CloudWatch Agent 相同的日志目录
+      volumes:
+        - name: config
+          configMap:
+            name: cloudwatch-agent-config
+        - name: varlog
+          hostPath:
+            path: /var/log
+            type: Directory  # 确保这里是主机的日志目录

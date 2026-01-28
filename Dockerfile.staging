@@ -1,0 +1,59 @@
+# Use the official Python image from the Docker Hub
+# 这里的基础镜像，没有意外的话，最好和原先EB的EC2实例保持一致，圆心用的应该都是linux2
+FROM 344318116989.dkr.ecr.us-east-1.amazonaws.com/lkrm-staging:2026.0127.154542
+SHELL ["/bin/bash", "-c"]
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+ENV DB_HOST=linkedin-connector-staging.c6dai18wjyfd.us-east-1.rds.amazonaws.com
+ENV DB_PASSWORD=expand123
+ENV DB_PORT=5432
+ENV DB_USER=root
+ENV DJANGO_SETTINGS_MODULE=linkedin_connector.settings
+ENV S3_AWS_ACCESS_KEY_ID=AKIAVAKXVQR6TW47LH4M
+ENV S3_AWS_SECRET_ACCESS_KEY=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
+ENV S3_BUCKET_NAME=lkrm-bucket-staging
+ENV S3_REGION_NAME=us-east-1
+ENV CACHE_HOST=lkcm-staging.7a35g2.ng.0001.use1.cache.amazonaws.com
+ENV Env=staging
+ENV BROWSER_HEADLESS=False
+
+# Set the working directory
+WORKDIR /var/app/current
+
+# Copy the project files
+COPY . /var/app/current
+# 复制 supervisord.conf 到 /etc/supervisor
+RUN mkdir -p /etc/supervisor
+COPY supervisord.conf /etc/supervisor/supervisord.conf
+
+RUN mkdir -p /mnt/logs/celery
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 下载Chrome浏览器及其依赖
+ENV PLAYWRIGHT_DOWNLOAD_HOST=https://npmmirror.com/mirrors/playwright
+RUN PLAYWRIGHT_CLI_LOG=1 playwright install chromium
+
+RUN mkdir -p /etc/nginx/conf.d/django
+COPY nginx/django/* /etc/nginx/conf.d/django
+COPY nginx/nginx.conf /etc/nginx
+
+# Ensure the script is executable
+RUN chmod +x /var/app/current/scripts/shutdown_check.sh
+
+# 为nginx配置文件创建目录
+RUN mkdir -p /mnt/logs/nginx
+RUN touch /mnt/logs/nginx/error.log
+RUN touch /mnt/logs/nginx/access.log
+
+# 为httpd配置文件创建目录
+RUN mkdir -p /mnt/logs/httpd
+RUN touch /mnt/logs/httpd/error.log
+RUN touch /mnt/logs/httpd/access.log
+
+# Expose the port the app runs on
+EXPOSE 8000
+EXPOSE 80

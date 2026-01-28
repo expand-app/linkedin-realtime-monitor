@@ -1,0 +1,90 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lkrm-prod
+  labels:
+    app: lkrm-prod
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lkrm-prod
+  template:
+    metadata:
+      labels:
+        app: lkrm-prod
+    spec:
+      nodeSelector:
+        role: web  # 指定部署到 label 为 role=web 的节点
+      tolerations:
+        - key: "role"
+          operator: "Equal"
+          value: "web"
+      serviceAccountName: cloudwatch-agent-service-account
+      terminationGracePeriodSeconds: 86400
+      containers:
+        - name: lkrm-prod
+          image: 625719641746.dkr.ecr.us-east-1.amazonaws.com/lkrm-prod:2026.0121.143152
+          imagePullPolicy: Always
+          command: ["/usr/local/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
+          ports:
+            - containerPort: 80
+          env:
+            - name: ENV
+              value: prod
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - "/bin/sh"
+                  - "-c"
+                  - "/var/app/current/scripts/shutdown_check.sh"
+          volumeMounts:
+            - name: shared-logs
+              mountPath: /mnt/logs
+            # nginx 单独挂载，避免丢失
+            - name: nginx-logs
+              mountPath: /mnt/logs/nginx
+          resources:
+            requests:
+              cpu: 350m
+              memory: 1536Mi
+            limits:
+              cpu: 500m
+              memory: 2048Mi
+        - name: cloudwatch-agent
+          image: amazon/cloudwatch-agent:latest
+          volumeMounts:
+            - name: config
+              mountPath: /etc/cwagentconfig
+            - name: shared-logs
+              mountPath: /mnt/logs  # Mount the shared volume where CloudWatch Agent will read logs
+            # nginx 单独挂载，避免丢失
+            - name: nginx-logs
+              mountPath: /mnt/logs/nginx
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "300m"
+      volumes:
+        - name: shared-logs
+          hostPath:
+            path: /var/log
+            type: Directory
+        # nginx 日志单独保留（避免丢失）
+        - name: nginx-logs
+          hostPath:
+            path: /var/log/nginx
+            type: DirectoryOrCreate
+        - name: config
+          configMap:
+            name: cloudwatch-agent-config
