@@ -1,0 +1,15 @@
+# service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: { { APP_NAME } }
+  namespace: default
+spec:
+  type: ClusterIP
+  selector:
+    app: { { APP_NAME } }
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 80 # Pod 里实际监听的 8000

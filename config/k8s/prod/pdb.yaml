@@ -1,0 +1,10 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: lkrm-prod-pdb
+  namespace: default
+spec:
+  minAvailable: 1  # 确保至少 1 个 Pod 可用（HAP 支持）
+  selector:
+    matchLabels:
+      app: lkrm-prod

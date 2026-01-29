@@ -52,7 +52,7 @@ class LKPClientBase:
         else:
             raise ValueError('Invalid env')
 
-    def create_account(self, account: Account, strict=False, source='lkc'):
+    def create_account(self, account: Account, strict=False, source='lkrm'):
         # TODO:为了方便tuilink使用，设置里source的默认值，后续发展上， 不应该这么做
         url = urljoin(self.base_url, '/api/linkedin-account/')
         response = requests.post(url=url, json=dict(
@@ -185,7 +185,7 @@ class LKPClientBase:
             method_name=method_name,
             params=params,
             enable_login=True,
-            source='LKC',
+            source='LKRM',
             description=f'{category} request {method_name}'
         ), timeout=3*60)
         if response.status_code != 201:

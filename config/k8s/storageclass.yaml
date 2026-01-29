@@ -1,0 +1,19 @@
+# StorageClass for EKS - 使用 gp3 (推荐) 或 gp2
+# gp3 提供更好的性能和更低的成本
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: gp3
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "false"
+provisioner: ebs.csi.aws.com
+parameters:
+  type: gp3
+  fsType: ext4
+  # gp3 可调参数
+  iops: "3000"  # IOPS (3000-16000)，默认 3000
+  throughput: "125"  # 吞吐量 (125-1000 MB/s)，默认 125
+volumeBindingMode: WaitForFirstConsumer  # 延迟绑定，确保 Pod 调度后再创建卷
+allowVolumeExpansion: true  # 允许卷扩展
+reclaimPolicy: Retain  # 删除 PVC 时保留卷（可选：Delete）
+

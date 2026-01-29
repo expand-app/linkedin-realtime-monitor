@@ -17,9 +17,8 @@ import os
 
 from django.conf import settings
 from django.http import HttpResponse
-from django.urls import path, include
-from django.contrib import admin
 from django.urls import path
+from django.contrib import admin
 
 from linkedin_realtime_monitor.settings import IS_PROD_ENV, redis_client, RUNNING_TASKS_KEY
 
@@ -44,7 +43,7 @@ def healthz(request):
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('healthz', healthz),
-    path('shutdownz', shutdownz),
+    path('shutdownz', shutdownz)
 ]
 # if not IS_PROD_ENV:
 #     urlpatterns.append(path("__debug__/", include("debug_toolbar.urls")))

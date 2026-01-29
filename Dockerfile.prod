@@ -1,0 +1,67 @@
+# Use the official Python image from the Docker Hub
+FROM 625719641746.dkr.ecr.us-east-1.amazonaws.com/lkrm-prod:2026.0109.102640
+SHELL ["/bin/bash", "-c"]
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+ENV DB_HOST=linkedin-connector-prod.ctgfrq9pjw56.us-east-1.rds.amazonaws.com
+ENV DB_PASSWORD=expand123
+ENV DB_PORT=5432
+ENV DB_USER=root
+ENV DJANGO_SETTINGS_MODULE=linkedin_connector.settings
+ENV S3_AWS_ACCESS_KEY_ID=AKIAZDL6MA2JP66MO2HS
+ENV S3_AWS_SECRET_ACCESS_KEY=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
+ENV S3_BUCKET_NAME=lkrm-bucket-prod
+ENV S3_ENDPOINT=lkrm-bucket-prod.s3-accelerate.amazonaws.com
+ENV S3_REGION_NAME=us-east-1
+ENV CACHE_HOST=lkrm-prod-redis-to-k8s.yh1jo9.ng.0001.use1.cache.amazonaws.com
+ENV Env=prod
+ENV BROWSER_HEADLESS=False
+
+# Set the working directory
+WORKDIR /var/app/current
+
+# Copy the project files
+COPY . /var/app/current
+# 复制 supervisord.conf 到 /etc/supervisor
+RUN mkdir -p /etc/supervisor
+COPY supervisord.conf /etc/supervisor/supervisord.conf
+
+COPY supervisord_celery.conf /etc/supervisor/supervisord_celery.conf
+
+RUN mkdir -p /mnt/logs/celery
+
+# 安装 tar 和 bzip2 用于解压 firefox
+RUN yum install -y tar bzip2
+
+RUN tar -xvjf addons/firefox-118.0.tar.bz2  -C ./addons
+
+# 为geckodriver创建日志文件
+RUN touch /var/app/current/geckodriver.log
+RUN chmod +x /var/app/current/geckodriver.log
+RUN chmod +755 /var/app/current/addons/geckodriver
+RUN chmod +755 /var/app/current/addons/firefox/firefox
+RUN pip install --no-cache-dir -r requirements.txt
+
+RUN mkdir -p /etc/nginx/conf.d/django
+COPY nginx/django/* /etc/nginx/conf.d/django
+COPY nginx/nginx.conf /etc/nginx
+
+# Ensure the script is executable
+RUN chmod +x /var/app/current/scripts/shutdown_check.sh
+
+# 为nginx配置文件创建目录
+RUN mkdir -p /mnt/logs/nginx
+RUN touch /mnt/logs/nginx/error.log
+RUN touch /mnt/logs/nginx/access.log
+
+# 为httpd配置文件创建目录
+RUN mkdir -p /mnt/logs/httpd
+RUN touch /mnt/logs/httpd/error.log
+RUN touch /mnt/logs/httpd/access.log
+
+# Expose the port the app runs on
+EXPOSE 8000
+EXPOSE 80

@@ -1,0 +1,86 @@
+# Use the official Python image from the Docker Hub
+# 这里的基础镜像，没有意外的话，最好和原先EB的EC2实例保持一致，圆心用的应该都是linux2
+# TODO: 第一版完备后， 可以构造一个基础镜像，具备所有安装的软件即可（nginx redis gcc python3.11 firefox geckodriver 等）， 这样， 每次基于我们自己的基础镜像构建，可以加快构建
+FROM amazonlinux:2023
+SHELL ["/bin/bash", "-c"]
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+ENV DB_HOST=linkedin-connector-staging.c6dai18wjyfd.us-east-1.rds.amazonaws.com
+ENV DB_PASSWORD=expand123
+ENV DB_PORT=5432
+ENV DB_USER=root
+ENV DJANGO_SETTINGS_MODULE=linkedin_proxy.settings
+ENV S3_AWS_ACCESS_KEY_ID=AKIAVAKXVQR6TW47LH4M
+ENV S3_AWS_SECRET_ACCESS_KEY=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;
+ENV S3_BUCKET_NAME=lkp-bucket-staging;
+ENV S3_ENDPOINT=lkp-bucket-staging.s3-accelerate.amazonaws.com;
+ENV S3_REGION_NAME=us-east-1
+ENV CACHE_HOST=lkp-redis-staging.7a35g2.ng.0001.use1.cache.amazonaws.com
+
+
+# Set the working directory
+WORKDIR /var/app/current
+
+# Copy the project files
+COPY . /var/app/current
+# 复制 supervisord.conf 到 /etc/supervisor
+RUN mkdir /etc/supervisor
+COPY supervisord.conf /etc/supervisor/supervisord.conf
+
+# 安装python, 版本和EC2的保持一致
+RUN yum install -y python3.11
+RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+RUN python3.11 get-pip.py
+
+# 更新系统并安装 supervisor
+RUN pip install supervisor
+
+RUN yum clean all
+RUN yum makecache
+
+# 只有装了这个， 才能用ps命令， 还是装上吧， 方便debug
+RUN dnf install -y procps
+RUN dnf install -y redis6
+
+RUN yum install -y postgresql-devel
+
+RUN yum install -y git
+RUN yum install -y gcc
+RUN yum install -y vim
+RUN yum install -y net-tools
+RUN yum install -y iputils
+RUN yum install -y tar bzip2
+RUN dnf install -y python3.11-devel
+
+# 为geckodriver创建日志文件
+RUN touch /var/log/geckodriver.log
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 为 Playwright 配置下载源（解决国内环境下 Chromium 下载失败问题）
+ENV PLAYWRIGHT_DOWNLOAD_HOST=https://npmmirror.com/mirrors/playwright
+
+# 下载 Chrome/Chromium 浏览器
+# Amazon Linux 不支持 Playwright 的 `--with-deps`（它会尝试用 apt-get 安装依赖），这里只安装浏览器本体
+RUN PLAYWRIGHT_CLI_LOG=1 playwright install chromium
+
+# 安装nginx
+RUN yum install -y nginx
+RUN mkdir /etc/nginx/conf.d/django
+COPY nginx/django/* /etc/nginx/conf.d/django
+COPY nginx/nginx.conf /etc/nginx
+COPY nginx/nginx-timeout.conf /etc/nginx/conf.d/
+
+# Ensure the script is executable
+RUN chmod +x /var/app/current/scripts/shutdown_check.sh
+
+
+# Expose the port the app runs on
+EXPOSE 8000
+EXPOSE 80
+
+CMD ["/usr/local/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
+#/usr/local/bin/supervisord -c /etc/supervisor/supervisord.conf
